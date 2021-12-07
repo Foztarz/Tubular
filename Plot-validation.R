@@ -691,3 +691,180 @@ if(save_plt)
   dev.off()
   shell.exec.OS(plt_path)
 }
+
+
+# Set up boxplot to save ------------------------------------------------
+if(save_plt)
+{
+  plt_path = PlotNamer(file = dt_path,
+                       namend = '_boxplot',
+                       saveas = save_type)
+  switch(save_type,
+         pdf = 
+           pdf(file = plt_path,
+               paper = 'a4',
+               height = 10,
+               bg = 'white',
+               useDingbats = F
+           ),
+         png = png(file = plt_path,
+                   res = 150,
+                   width = 210*10,
+                   height = 297*10,
+                   bg = 'white'
+         ),
+         jpeg(file = paste0(plt_path,'.jpeg'),
+              quality = 100,
+              width = 210*10,
+              height = 297*10,
+              bg = 'white'
+         )
+  )
+}
+
+# Set up plot area ------------------------------------------------------
+par(mar = mgn,
+    mfrow = c(6,2),
+    oma = if(save_plt){c(0,5,0,5)}else{c(0,0,0,0)} 
+)
+
+# General comparison ------------------------------------------------------
+
+BXplotmeth = function(data,
+           palette,
+           varnm,
+           lbl,
+           pltmar = 0.3
+           )
+{
+  SdmuRelabel = function(x)
+  {
+    if(is.na(x)){'uniform'}else
+    {paste0(x,'°')}
+  }
+  unq = sort( unique(with(data, { eval(str2lang(varnm)) })) ) #N.B. boxplot sorts
+  lunq = length(unq)
+  cll = hcl.colors(n = lunq,
+                   palette = palette)
+  expmu = str2lang(paste0('(`mle_mu_50%`-`stan_mu_50%`)~',varnm))
+  expkappa = str2lang(paste0('(`mle_kappa_50%`-`stan_kappa_50%`)~',varnm))
+  
+  boxplot(x = NULL,
+          data = data,
+          ylim = c(-180,180)/2,
+          xlim = c(1,lunq)+c(-1,1)*pltmar,
+          xlab = lbl,
+          ylab = 'Bayesian Estimation improvement (°)',
+          axes = F
+  )  
+  polygon(x = c(1,lunq, lunq,1) + c(-1,1,1,-1)*pltmar, 
+          y = c(0,0, 180,180), 
+          col = gray(250/255),
+          border = NA
+  )
+  title(main =  'median error in mean angle (°)',
+        line = -1)
+  axis(side = 1, at = 1:lunq, labels = unq, col = NA)
+  axis(side = 2, at = seq(from = -180, to  = 180, by  = 30))
+  boxplot(formula = eval(expmu),
+          data = data,
+          col = cll,
+          add = T ,
+          xlab = '',
+          ylab = '',
+          axes = F,
+          outline = F,
+          pars = list(boxwex = diff(range(par('xaxp')))*0.06,
+                      staplewex = diff(range(par('xaxp')))*0.10, 
+                      outwex = diff(range(par('xaxp')))*0.05)
+  )
+  stripchart(x = eval(expmu),
+             data = data,
+             bg = gray(200/255, alpha= 90/255),
+             col = adjustcolor(col = cll, alpha.f = 90/255),
+             pch = 21,
+             vertical = T,
+             jitter = 0.3,
+             method = 'jitter',
+             add = T ,
+             xlab = '',
+             ylab = '',
+             axes = F
+  )
+  abline(h = 0, lty = 2)
+  
+  boxplot(x = NULL,
+          data = data,
+          ylim = c(-1,1)*A1inv(0.7),
+          xlim = c(1,lunq) + c(-1,1)*pltmar,
+          xlab = lbl,
+          ylab = 'Bayesian Estimation improvement (kappa)',
+          axes = F
+  )  
+  polygon(x = c(1,lunq, lunq,1) + c(-1,1,1,-1)*pltmar, 
+          y = A1inv(c(0,0,0.7,0.7)), 
+          col = gray(250/255),
+          border = NA
+  )
+  title(main =  'median error in concentration (kappa)',
+        line = -1)
+  axis(side = 1, at = 1:lunq, labels = unq, col = NA)
+  axis(side = 2, at = seq(from = round(-A1inv(0.7)), to  = round(A1inv(0.7)), by  = 0.5))
+  boxplot(formula = eval(expkappa),
+          data = data,
+          col = cll,
+          add = T ,
+          xlab = '',
+          ylab = '',
+          axes = F,
+          outline = F,
+          pars = list(boxwex = diff(range(par('xaxp')))*0.06,
+                      staplewex = diff(range(par('xaxp')))*0.10, 
+                      outwex = diff(range(par('xaxp')))*0.05)
+  )
+  stripchart(x = eval(expkappa),
+             data = data,
+             bg = gray(200/255, alpha= 90/255),
+             col = adjustcolor(col = cll, alpha.f = 90/255),
+             pch = 21,
+             vertical = T,
+             jitter = 0.3,
+             method = 'jitter',
+             add = T ,
+             xlab = '',
+             ylab = '',
+             axes = F
+  )
+  abline(h = 0, lty = 2)
+}
+
+BXplotmeth(data = plt_dta,
+           palette = 'Blues',
+           varnm = '(no_indiv>0)',
+           lbl = 'All')
+BXplotmeth(data = plt_dta,
+           palette = plette_lines,
+           varnm = 'no_indiv',
+           lbl = 'Number of Individuals')
+BXplotmeth(data = plt_dta,
+           palette = plette_lines,
+           varnm = 'nper_indiv',
+           lbl = 'Observations per individual')
+BXplotmeth(data = plt_dta,
+           palette = plette_lines,
+           varnm = 'round(A1(kappa),2)',
+           lbl = 'Mean vector length')
+BXplotmeth(data = plt_dta,
+           palette = plette_lines,
+           varnm = "sapply(X = sd, FUN = SdmuRelabel)",
+           lbl = 'sd in mean angle (°)')
+BXplotmeth(data = plt_dta,
+           palette = plette_lines,
+           varnm = 'round(sd_logkappa,2)',
+           lbl = 'sd in log(kappa)')
+# Save and open plot ----------------------------------------------------
+if(save_plt)
+{
+  dev.off()
+  shell.exec.OS(plt_path)
+}
