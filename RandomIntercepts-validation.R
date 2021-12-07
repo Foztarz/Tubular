@@ -2,7 +2,7 @@
 graphics.off()
 # Details ---------------------------------------------------------------
 #       AUTHOR:	James Foster              DATE: 2021 12 02
-#     MODIFIED:	James Foster              DATE: 2021 12 02
+#     MODIFIED:	James Foster              DATE: 2021 12 06
 #
 #  DESCRIPTION: Loads functions, generates simulated dance angles and fits a 
 #               von Mises model with individual effects. This model is then 
@@ -14,7 +14,7 @@ graphics.off()
 #      OUTPUTS: A BRMS dataset (.Rdata), custom Stan code (.stan), and a fitted 
 #               Stan model (.Rdata).
 #
-#	   CHANGES: - 
+#	   CHANGES: - waitbar
 #             - 
 #             - 
 #
@@ -34,8 +34,8 @@ graphics.off()
 # 
 #TODO   ---------------------------------------------
 #TODO   
-#- Simulate data   
-#- Set up input - output comparison
+#- Simulate data   +
+#- Set up input - output comparison +
 #- Get modelling consistent
 #- Batch run
 #- Save results  
@@ -97,8 +97,8 @@ cmdstanr::check_cmdstan_toolchain()
 
 
 # User input --------------------------------------------------------------
-no_indiv = c(5, 10, 30, 100) #number of individuals
-nper_indiv = c(5, 10, 30, 100) # observations per individual
+no_indiv = c(5, 10, 30)#, 100) #number of individuals
+nper_indiv = c(5, 10, 30)#, 100) # observations per individual
 kappa = A1inv(c(0.3, 0.5, 0.7))# mean vector lengths
 sd_logkappa = log(1+ A1inv(c(0.1, 0.2, 0.3)))# ~sd of mean vector length
 sd_mu = c(NA, 15, 30, 90)#~ sd of individual means in ° (NA for uniform)
@@ -120,12 +120,19 @@ par_in_df = within(par_in_df,
                    )
 
 par_inout_df = par_in_df
-par_inout_df$errors = NA
+progb = txtProgressBar(min = 0,
+                    max = dim(par_in_df)[1],
+                    initial = 0, 
+                    char = "-",
+                    width = NA, 
+                    style = 3)
 # Open the loop -----------------------------------------------------------
-for(i in dim(par_in_df)[1])
+for(i in 1:dim(par_in_df)[1])
 {
+  
   par_in = par_in_df[i,]
-
+  setTxtProgressBar(pb = progb,
+                    value = i)
 # Derived variables -------------------------------------------------------
 #make a list of parameters for each individual
 par_lst = lapply(X = 1:par_in$no_indiv,
@@ -259,12 +266,19 @@ write.table(x = scode,
 
 
 # Run model on simulated data ---------------------------------------------
+
+# . Set up model ----------------------------------------------------------
+
+
 shortrun = TRUE #FALSE # 
 
 stan_mod = cmdstanr::cmdstan_model(cd_path)
 
 
 
+# . Run model -------------------------------------------------------------
+
+message('----  ', 'Running model with parameters: ', cond_nm, '  ----')
 #beware, this could take a while!
 fit = stan_mod$sample(
   data = br_data,#data object brms made
@@ -478,6 +492,7 @@ par_inout_df[i,paste0(nm,'_',qn)] = sm_errors[qn, nm]
 }
 
 # Close loop --------------------------------------------------------------
+rm(fit, fake_dta, par_in, par_out, fake_dta)
 }
 
 
@@ -486,106 +501,107 @@ par_inout_df[i,paste0(nm,'_',qn)] = sm_errors[qn, nm]
 sv_path <- file.path(save_path,
                      paste0('validation_',
                             Sys.Date(),
-                            '.Rdata')
+                            '.csv')
+                            # '.Rdata')
 )	
 
 write.csv(x = par_inout_df,
           file = sv_path
           )
-q('no')
+# q('no')
 # . Plot Mu & Kappa -------------------------------------------------------
-StanVMaPlot = function(i, 
-                       data,
-                       params_out,
-                       params_in)
-{
-  with(subset(data, indiv == i), 
-       {plot.circular(x = as.circular(bearing, control.circular = deg360),
-                      stack = TRUE,
-                      sep = -0.04,
-                      bins = (360-5)/5,
-                      zero = pi/2)
-         tmp_ang = as.circular(
-           x = angle,
-           control.circular = pipi0
-         )
-         arrows.circular(x = -pi/2+
-                           mean.circular(tmp_ang),
-                         shrink = rho.circular(tmp_ang),
-                         col = 'green3',
-                         lwd = 2,
-                         length = 0)
-       }
-  )
-  with(params_in[[i]],
-       {
-         arrows.circular(x = 
-                           as.circular(
-                             x = mu,
-                             control.circular = deg360
-                           ),
-                         shrink = A1(kappa),
-                         col = 'blue',
-                         lwd = 1,
-                         length = 0,
-                         zero = pi/2)
-         lines(x = A1(kappa)*cos(seq(from = -pi, to  = pi, length.out = 1e3)),
-               y = A1(kappa)*sin(seq(from = -pi, to  = pi, length.out = 1e3)),
-               lty = 2,
-               col = 'blue')
-       }
-  )
-  with(params_out,
-       {
-         lines.circular(x = -pi/2+
-                          as.circular(
-                            x = rep(mu$med[[1]] + mu_ind$med[i][[1]],2),
-                            control.circular = pipi0
-                          ),
-                        y = -(1-A1(exp(
-                          kappa$med[[1]] + kappa_ind$quant[i][[1]]
-                        ))),
-                        col = adjustcolor('orange',alpha.f = 70/255),
-                        lwd = 10,
-                        lend = 'butt'
-         )
-         arrows.circular(x = -pi/2+
-                           as.circular(x = mu$med[[1]] + mu_ind$med[i][[1]],
-                                       control.circular = pipi0
-                           ),
-                         shrink = A1(exp(kappa$med + kappa_ind$med[i][[1]])),
-                         col = adjustcolor('red',alpha.f = 150/255),
-                         lwd = 5,
-                         length = 0
-         )
-       })
-  
-}
-par(mfrow = rep(x = ceiling(sqrt(par_in$no_indiv)), times = 2),
-    mar = c(0,0,0,0)
-)
-invisible(
-  {
-    lapply(X = 1:par_in$no_indiv,
-           FUN = StanVMaPlot,
-           data = fake_dta,
-           params_out = par_out,
-           params_in = par_lst
-    )
-  }
-)
-plot.new()
-legend(x = 'center',#topright',
-       legend = c('input',
-                  'Maximum likelihood',
-                  'Stan fit',
-                  'Credible interval'),
-       lty = 1,
-       col = c('blue',
-               'green3',
-               adjustcolor('red',alpha.f = 200/255),
-               adjustcolor('orange',alpha.f = 100/255)),
-       lwd = c(1,2,3,5,10),
-       cex = 0.75,
-       bg = 'white',
-)
+  # StanVMaPlot = function(i, 
+  #                        data,
+  #                        params_out,
+  #                        params_in)
+  # {
+  #   with(subset(data, indiv == i), 
+  #        {plot.circular(x = as.circular(bearing, control.circular = deg360),
+  #                       stack = TRUE,
+  #                       sep = -0.04,
+  #                       bins = (360-5)/5,
+  #                       zero = pi/2)
+  #          tmp_ang = as.circular(
+  #            x = angle,
+  #            control.circular = pipi0
+  #          )
+  #          arrows.circular(x = -pi/2+
+  #                            mean.circular(tmp_ang),
+  #                          shrink = rho.circular(tmp_ang),
+  #                          col = 'green3',
+  #                          lwd = 2,
+  #                          length = 0)
+  #        }
+  #   )
+  #   with(params_in[[i]],
+  #        {
+  #          arrows.circular(x = 
+  #                            as.circular(
+  #                              x = mu,
+  #                              control.circular = deg360
+  #                            ),
+  #                          shrink = A1(kappa),
+  #                          col = 'blue',
+  #                          lwd = 1,
+  #                          length = 0,
+  #                          zero = pi/2)
+  #          lines(x = A1(kappa)*cos(seq(from = -pi, to  = pi, length.out = 1e3)),
+  #                y = A1(kappa)*sin(seq(from = -pi, to  = pi, length.out = 1e3)),
+  #                lty = 2,
+  #                col = 'blue')
+  #        }
+  #   )
+  #   with(params_out,
+  #        {
+  #          lines.circular(x = -pi/2+
+  #                           as.circular(
+  #                             x = rep(mu$med[[1]] + mu_ind$med[i][[1]],2),
+  #                             control.circular = pipi0
+  #                           ),
+  #                         y = -(1-A1(exp(
+  #                           kappa$med[[1]] + kappa_ind$quant[i][[1]]
+  #                         ))),
+  #                         col = adjustcolor('orange',alpha.f = 70/255),
+  #                         lwd = 10,
+  #                         lend = 'butt'
+  #          )
+  #          arrows.circular(x = -pi/2+
+  #                            as.circular(x = mu$med[[1]] + mu_ind$med[i][[1]],
+  #                                        control.circular = pipi0
+  #                            ),
+  #                          shrink = A1(exp(kappa$med + kappa_ind$med[i][[1]])),
+  #                          col = adjustcolor('red',alpha.f = 150/255),
+  #                          lwd = 5,
+  #                          length = 0
+  #          )
+  #        })
+  #   
+  # }
+  # par(mfrow = rep(x = ceiling(sqrt(par_in$no_indiv)), times = 2),
+  #     mar = c(0,0,0,0)
+  # )
+  # invisible(
+  #   {
+  #     lapply(X = 1:par_in$no_indiv,
+  #            FUN = StanVMaPlot,
+  #            data = fake_dta,
+  #            params_out = par_out,
+  #            params_in = par_lst
+  #     )
+  #   }
+  # )
+  # plot.new()
+  # legend(x = 'center',#topright',
+  #        legend = c('input',
+  #                   'Maximum likelihood',
+  #                   'Stan fit',
+  #                   'Credible interval'),
+  #        lty = 1,
+  #        col = c('blue',
+  #                'green3',
+  #                adjustcolor('red',alpha.f = 200/255),
+  #                adjustcolor('orange',alpha.f = 100/255)),
+  #        lwd = c(1,2,3,5,10),
+  #        cex = 0.75,
+  #        bg = 'white',
+  # )
