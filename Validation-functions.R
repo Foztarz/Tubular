@@ -479,7 +479,8 @@ MakeStan_MEvonMises = function(brms_data,
       "// circular mean of the dataset aids convergence of SD and Z.",
       switch(EXPR = mu_prior,
              uniform = "target += uniform_lpdf(temp_angle | -pi(), pi()); //any population mean within one circle has equal likelihood",
-             vonmises = "target += von_mises_unitvector_lpdf(mu_vec| mean_circular(Y,N), 10); //95% prob. at ±37°")
+             # vonmises = "target += von_mises_unitvector_lpdf(mu_vec| mean_circular(Y,N), 10); //95% prob. at ±37°")
+             vonmises = "target += von_mises_unitvector_lpdf(mu_vec| mean_circular(Y,N), 5); //95% prob. at ±54°")
     ),
     '\n',
     collapse = ''
