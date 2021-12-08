@@ -2,7 +2,7 @@
 graphics.off()
 # Details ---------------------------------------------------------------
 #       AUTHOR:	James Foster              DATE: 2021 12 02
-#     MODIFIED:	James Foster              DATE: 2021 12 06
+#     MODIFIED:	James Foster              DATE: 2021 12 08
 #
 #  DESCRIPTION: Loads functions, generates simulated dance angles and fits a 
 #               von Mises model with individual effects. This model is then 
@@ -36,8 +36,8 @@ graphics.off()
 #TODO   
 #- Simulate data   +
 #- Set up input - output comparison +
+#- Batch run  +
 #- Get modelling consistent
-#- Batch run
 #- Save results  
 
 # Check environment -------------------------------------------------------
@@ -103,6 +103,7 @@ kappa = A1inv(c(0.3, 0.5, 0.7))# mean vector lengths
 sd_logkappa = log(1+ A1inv(c(0.1, 0.2, 0.3)))# ~sd of mean vector length
 sd_mu = c(NA, 15, 30, 90)#~ sd of individual means in ° (NA for uniform)
 mu_dist = 'vonmises' # 'uniform' #distribution to use for modelling individual means
+n_rep = 5 # number of replicates of each 
 # . Batch setup -----------------------------------------------------------
 par_in_df = expand.grid(
                         no_indiv = no_indiv,
@@ -119,6 +120,13 @@ par_in_df = within(par_in_df,
                    }
                    )
 
+# Replicate conditions ----------------------------------------------------
+par_in_df = do.call(what = rbind, 
+                    args = lapply(X = 1:n_rep,
+                                  FUN = function(i){return(par_in_df)}
+                                  )
+)
+#set up output data
 par_inout_df = par_in_df
 progb = txtProgressBar(min = 0,
                     max = dim(par_in_df)[1],
@@ -501,6 +509,7 @@ rm(fit, fake_dta, par_in, par_out, fake_dta)
 sv_path <- file.path(save_path,
                      paste0('validation_',
                             Sys.Date(),
+                            'UNIF',
                             '.csv')
                             # '.Rdata')
 )	
