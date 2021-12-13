@@ -509,7 +509,6 @@ rm(fit, fake_dta, par_in, par_out, fake_dta)
 sv_path <- file.path(save_path,
                      paste0('validation_',
                             Sys.Date(),
-                            'UNIF',
                             '.csv')
                             # '.Rdata')
 )	
@@ -517,7 +516,7 @@ sv_path <- file.path(save_path,
 write.csv(x = par_inout_df,
           file = sv_path
           )
-# q('no')
+q('no')
 # . Plot Mu & Kappa -------------------------------------------------------
   # StanVMaPlot = function(i, 
   #                        data,
