@@ -734,7 +734,8 @@ BXplotmeth = function(data,
            palette,
            varnm,
            lbl,
-           pltmar = 0.3
+           pltmar = 0.3,
+           alpha = 50/255
            )
 {
   SdmuRelabel = function(x)
@@ -751,7 +752,7 @@ BXplotmeth = function(data,
   
   boxplot(x = NULL,
           data = data,
-          ylim = c(-180,180)/2,
+          ylim = c(-180,180)/1.5,
           xlim = c(1,lunq)+c(-1,1)*pltmar,
           xlab = lbl,
           ylab = 'Bayesian Estimation improvement (°)',
@@ -780,8 +781,8 @@ BXplotmeth = function(data,
   )
   stripchart(x = eval(expmu),
              data = data,
-             bg = gray(200/255, alpha= 90/255),
-             col = adjustcolor(col = cll, alpha.f = 90/255),
+             bg = gray(200/255, alpha= alpha),
+             col = adjustcolor(col = cll, alpha.f = alpha),
              pch = 21,
              vertical = T,
              jitter = 0.3,
@@ -795,21 +796,21 @@ BXplotmeth = function(data,
   
   boxplot(x = NULL,
           data = data,
-          ylim = c(-1,1)*A1inv(0.7),
+          ylim = c(-1,1)*A1inv(0.85),
           xlim = c(1,lunq) + c(-1,1)*pltmar,
           xlab = lbl,
           ylab = 'Bayesian Estimation improvement (kappa)',
           axes = F
   )  
   polygon(x = c(1,lunq, lunq,1) + c(-1,1,1,-1)*pltmar, 
-          y = A1inv(c(0,0,0.7,0.7)), 
+          y = A1inv(c(0,0,0.85,0.85)), 
           col = gray(250/255),
           border = NA
   )
   title(main =  'median error in concentration (kappa)',
         line = -1)
   axis(side = 1, at = 1:lunq, labels = unq, col = NA)
-  axis(side = 2, at = seq(from = round(-A1inv(0.7)), to  = round(A1inv(0.7)), by  = 0.5))
+  axis(side = 2, at = seq(from = round(-A1inv(0.85)), to  = round(A1inv(0.85)), by  = 0.5))
   boxplot(formula = eval(expkappa),
           data = data,
           col = cll,
@@ -824,8 +825,8 @@ BXplotmeth = function(data,
   )
   stripchart(x = eval(expkappa),
              data = data,
-             bg = gray(200/255, alpha= 90/255),
-             col = adjustcolor(col = cll, alpha.f = 90/255),
+             bg = gray(200/255, alpha= alpha),
+             col = adjustcolor(col = cll, alpha.f = alpha),
              pch = 21,
              vertical = T,
              jitter = 0.3,
