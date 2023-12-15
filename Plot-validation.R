@@ -1,8 +1,6 @@
-#FOR A 'CLEAN' RUN, PRESS ctrl+shift+F10 to RESTART Rstudio
-graphics.off()
 # Details ---------------------------------------------------------------
 #       AUTHOR:	James Foster              DATE: 2021 12 07
-#     MODIFIED:	James Foster              DATE: 2021 12 07
+#     MODIFIED:	James Foster              DATE: 2023 04 06
 #
 #  DESCRIPTION: Loads a data frame containing parameter estimate error 
 #               from a batch run of "RandomIntercepts-validation.R" and plots
