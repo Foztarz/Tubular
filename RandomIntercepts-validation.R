@@ -2,7 +2,7 @@
 graphics.off()
 # Details ---------------------------------------------------------------
 #       AUTHOR:	James Foster              DATE: 2021 12 02
-#     MODIFIED:	James Foster              DATE: 2021 12 08
+#     MODIFIED:	James Foster              DATE: 2023 04 04
 #
 #  DESCRIPTION: Loads functions, generates simulated dance angles and fits a 
 #               von Mises model with individual effects. This model is then 
@@ -37,6 +37,7 @@ graphics.off()
 #- Simulate data   +
 #- Set up input - output comparison +
 #- Batch run  +
+#- Fix array declaration (... placing brackets after a variable name is deprecated)
 #- Get modelling consistent
 #- Save results  
 
@@ -86,7 +87,7 @@ source(file = fun_path,
        encoding = 'UTF-8')
 
 # . Check C++ is working --------------------------------------------------
-CPPtest()
+# CPPtest() #unnecessarily alarming, CMDStan working fine
 cmdstanr::check_cmdstan_toolchain()
 
 
